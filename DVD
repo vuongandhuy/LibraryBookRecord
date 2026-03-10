@@ -1,0 +1,82 @@
+public class DVD extends LibraryItem {
+
+    private String cast;
+    private String credits;
+    private String plot;
+    private String language;
+    private String publisher;
+    private String physicalDescription;
+    private String isbn;
+//Getter
+    public String getCast() {
+        return cast;
+    }
+
+    public void setCast(String cast) {
+        this.cast = cast;
+    }
+
+    public String getCredits() {
+        return credits;
+    }
+
+    public void setCredits(String credits) {
+        this.credits = credits;
+    }
+
+    public String getPlot() {
+        return plot;
+    }
+
+    public void setPlot(String plot) {
+        this.plot = plot;
+    }
+
+    public String getLanguage() {
+        return language;
+    }
+    //Setter
+
+    public void setLanguage(String language) {
+        this.language = language;
+    }
+
+    public String getPublisher() {
+        return publisher;
+    }
+
+    public void setPublisher(String publisher) {
+        this.publisher = publisher;
+    }
+
+    public String getPhysicalDescription() {
+        return physicalDescription;
+    }
+
+    public void setPhysicalDescription(String physicalDescription) {
+        this.physicalDescription = physicalDescription;
+    }
+
+    public String getIsbn() {
+        return isbn;
+    }
+
+    public void setIsbn(String isbn) {
+        this.isbn = isbn;
+    }
+
+    @Override
+    public String toString() {
+        return "------------------------------\n" +
+                "Type: DVD\n" +
+                super.toString() +
+                "Cast: " + cast + "\n" +
+                "Credits: " + credits + "\n" +
+                "Language: " + language + "\n" +
+                "Publisher: " + publisher + "\n" +
+                "Physical Description: " + physicalDescription + "\n" +
+                "ISBN: " + isbn + "\n" +
+                "Plot: " + plot + "\n" +
+                "------------------------------\n";
+    }
+}
