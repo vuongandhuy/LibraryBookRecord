@@ -1,0 +1,83 @@
+public class CD extends LibraryItem {
+
+    private String performers;
+    private String credits;
+    private String description;
+    private String language;
+    private String publisher;
+    private String physicalDescription;
+    private String isbn;
+
+    //Getter
+    public String getPerformers() {
+        return performers;
+    }
+
+    public void setPerformers(String performers) {
+        this.performers = performers;
+    }
+
+    public String getCredits() {
+        return credits;
+    }
+
+    public void setCredits(String credits) {
+        this.credits = credits;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getLanguage() {
+        return language;
+    }
+
+    public void setLanguage(String language) {
+        this.language = language;
+    }
+
+    public String getPublisher() {
+        return publisher;
+    }
+    //Setter
+
+    public void setPublisher(String publisher) {
+        this.publisher = publisher;
+    }
+
+    public String getPhysicalDescription() {
+        return physicalDescription;
+    }
+
+    public void setPhysicalDescription(String physicalDescription) {
+        this.physicalDescription = physicalDescription;
+    }
+
+    public String getIsbn() {
+        return isbn;
+    }
+
+    public void setIsbn(String isbn) {
+        this.isbn = isbn;
+    }
+
+    @Override
+    public String toString() {
+        return "------------------------------\n" +
+                "Type: CD\n" +
+                super.toString() +
+                "Performers: " + performers + "\n" +
+                "Credits: " + credits + "\n" +
+                "Language: " + language + "\n" +
+                "Publisher: " + publisher + "\n" +
+                "Physical Description: " + physicalDescription + "\n" +
+                "ISBN: " + isbn + "\n" +
+                "Description: " + description + "\n" +
+                "------------------------------\n";
+    }
+}
