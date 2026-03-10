@@ -1,0 +1,31 @@
+public class Book extends LibraryItem {
+
+    private String authors;
+    private String summary;
+
+    public String getAuthors() {
+        return authors;
+    }
+
+    public void setAuthors(String authors) {
+        this.authors = authors;
+    }
+
+    public String getSummary() {
+        return summary;
+    }
+
+    public void setSummary(String summary) {
+        this.summary = summary;
+    }
+
+    @Override
+    public String toString() {
+        return "------------------------------\n" +
+                "Type: Book\n" +
+                super.toString() +
+                "Author(s): " + authors + "\n" +
+                "Summary: " + summary + "\n" +
+                "------------------------------\n";
+    }
+}
