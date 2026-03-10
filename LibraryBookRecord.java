@@ -1,12 +1,13 @@
 public class LibraryBookRecord {
-    //Defining attributes
+    // Defining attributes
     private String oclcNumber;
     private String title;
     private String authors;
     private String summary;
     private int publicationYear;
+    private String genre; // NEW: Added Genre
 
-    //Setter
+    // Setters
     public void setOclcNumber(String oclcNumber) {
         this.oclcNumber = oclcNumber;
     }
@@ -27,7 +28,11 @@ public class LibraryBookRecord {
         this.publicationYear = publicationYear;
     }
 
-    //Getter
+    public void setGenre(String genre) {
+        this.genre = genre;
+    }
+
+    // Getters
     public int getPublicationYear() {
         return publicationYear;
     }
@@ -48,6 +53,10 @@ public class LibraryBookRecord {
         return title;
     }
 
+    public String getGenre() {
+        return genre;
+    }
+
     @Override
     public String toString() {
         // We build a single string that combines all the book's details
@@ -55,9 +64,10 @@ public class LibraryBookRecord {
                 "------------------------------\n" +
                 "OCLC: " + oclcNumber + "\n" +
                 "Title: " + title + "\n" +
-                "Author: " + authors + "\n" +
+                "Author(s): " + authors + "\n" +
+                "Genre: " + genre + "\n" +
                 "Year: " + publicationYear + "\n" +
                 "Summary: " + summary + "\n" +
-                "------------------------------";
+                "------------------------------\n";
     }
 }
