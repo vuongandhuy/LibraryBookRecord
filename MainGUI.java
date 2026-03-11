@@ -3,56 +3,105 @@ import java.awt.*;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 
 public class MainGUI {
 
-    // MAP 1: Stores books by OCLC Number
-    private static Map<String, LibraryBookRecord> bookCatalogueMap = new HashMap<>();
+    // core data structures to hold catalogue items and count genres (Tasks A & B)
+    private static Map<String, LibraryItem> completeCatalogue = new HashMap<>();
+    private static Map<String, Integer> bookGenreCounts = new HashMap<>();
+    private static Map<String, Integer> dvdGenreCounts = new HashMap<>();
+    private static Map<String, Integer> cdGenreCounts = new HashMap<>();
 
-    // MAP 2: Stores books by Genre
-    private static Map<String, ArrayList<LibraryBookRecord>> genreMap = new HashMap<>();
+    // map for Task C to keep a running total of loan days for each OCLC
+    private static Map<String, Integer> totalLoanDaysMap = new HashMap<>();
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
 
-            JFrame frame = new JFrame("Library Catalogue Parser & Search");
-            frame.setSize(1000, 700); // Made it a tiny bit wider to fit the new button
+            // setup main application window
+            JFrame frame = new JFrame("Library Catalogue Dashboard");
+            frame.setSize(1100, 800);
             frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
             frame.setLayout(new BorderLayout());
 
-            JPanel topControls = new JPanel(new GridLayout(2, 1));
+            // setup layout manager for the top control panel
+            JPanel topControls = new JPanel(new GridLayout(4, 1));
             JPanel row1 = new JPanel();
             JPanel row2 = new JPanel();
+            JPanel row3 = new JPanel();
+            JPanel row4 = new JPanel();
 
-            // --- Row 1 Components ---
+            // row 1: basic file loading and report generation
             JButton loadButton = new JButton("Load File");
-            JButton showAllButton = new JButton("Show All Books"); // NEW BUTTON
-            JLabel oclcSearchLabel = new JLabel("  Search OCLC:");
-            JTextField oclcSearchField = new JTextField(12);
-            JButton oclcSearchButton = new JButton("Search Book");
+            JButton showAllButton = new JButton("Show All Items");
+            JButton displayReportBtn = new JButton("Display Report");
+            JButton saveReportBtn = new JButton("Save Report");
 
             row1.add(loadButton);
-            row1.add(showAllButton); // ADDED TO GUI
-            row1.add(oclcSearchLabel);
-            row1.add(oclcSearchField);
-            row1.add(oclcSearchButton);
+            row1.add(showAllButton);
+            row1.add(displayReportBtn);
+            row1.add(saveReportBtn);
 
-            // --- Row 2 Components ---
-            JLabel genreSearchLabel = new JLabel("Search Genre (e.g., History):");
-            JTextField genreSearchField = new JTextField(15);
+            // row 2: search functionality for specific items and genres
+            JLabel oclcSearchLabel = new JLabel("Search OCLC:");
+            JTextField oclcSearchField = new JTextField(10);
+            JButton oclcSearchButton = new JButton("Search Item");
+
+            JLabel genreSearchLabel = new JLabel("  Search Genre:");
+            JTextField genreSearchField = new JTextField(12);
             JButton genreSearchButton = new JButton("Search Genre");
 
+            row2.add(oclcSearchLabel);
+            row2.add(oclcSearchField);
+            row2.add(oclcSearchButton);
             row2.add(genreSearchLabel);
             row2.add(genreSearchField);
             row2.add(genreSearchButton);
 
+            // row 3: radio buttons to filter genres by category
+            JRadioButton bookRadio = new JRadioButton("Books");
+            JRadioButton dvdRadio = new JRadioButton("DVDs");
+            JRadioButton cdRadio = new JRadioButton("CDs");
+            ButtonGroup categoryGroup = new ButtonGroup();
+            categoryGroup.add(bookRadio);
+            categoryGroup.add(dvdRadio);
+            categoryGroup.add(cdRadio);
+            bookRadio.setSelected(true); // default selection
+
+            JButton showGenresBtn = new JButton("Show Genres");
+
+            row3.add(new JLabel("Filter Genres by Category: "));
+            row3.add(bookRadio);
+            row3.add(dvdRadio);
+            row3.add(cdRadio);
+            row3.add(showGenresBtn);
+
+            // row 4: loan record analysis buttons (Task C)
+            JButton loadLoansBtn = new JButton("Load Loan Records");
+            JButton topBooksBtn = new JButton("Top 10 Books");
+            JButton topDvdBtn = new JButton("Top 10 DVDs");
+            JButton topCdBtn = new JButton("Top 10 CDs");
+
+            row4.add(loadLoansBtn);
+            row4.add(new JLabel("   |   "));
+            row4.add(topBooksBtn);
+            row4.add(topDvdBtn);
+            row4.add(topCdBtn);
+
+            // add all rows to the main top panel
             topControls.add(row1);
             topControls.add(row2);
+            topControls.add(row3);
+            topControls.add(row4);
 
+            // setup text area for displaying results
             JTextArea textArea = new JTextArea();
             textArea.setEditable(false);
             JScrollPane scrollPane = new JScrollPane(textArea);
@@ -61,194 +110,454 @@ public class MainGUI {
             frame.add(scrollPane, BorderLayout.CENTER);
             frame.setVisible(true);
 
-            // --- ACTION LISTENERS ---
+            // --- EVENT LISTENERS ---
 
-            // 1. LOAD BUTTON
+            // handles opening files and routing to the correct parser
             loadButton.addActionListener(e -> {
-                JFileChooser fileChooser = new JFileChooser("C:\\Users\\30066458\\Downloads");
+                JFileChooser fileChooser = new JFileChooser("."); // use current directory to avoid hardcoded paths
                 int response = fileChooser.showOpenDialog(null);
                 if (response == JFileChooser.APPROVE_OPTION) {
-                    parseBookCatalogue(fileChooser.getSelectedFile(), textArea);
+                    File selectedFile = fileChooser.getSelectedFile();
+                    String fileName = selectedFile.getName();
+
+                    if (fileName.contains("Book")) {
+                        parseBookCatalogue(selectedFile, textArea);
+                    } else if (fileName.contains("DVD")) {
+                        parseDVDCatalogue(selectedFile, textArea);
+                    } else if (fileName.contains("CD")) {
+                        parseCDCatalogue(selectedFile, textArea);
+                    } else {
+                        textArea.setText("Please select a valid Book, DVD, or CD catalogue file.");
+                    }
                 }
             });
 
-            // 2. SHOW ALL BOOKS BUTTON (The "Back to Menu" feature)
+            // loads the loan records file (make sure catalogue is loaded first)
+            loadLoansBtn.addActionListener(e -> {
+                if (completeCatalogue.isEmpty()) {
+                    textArea.setText("Please load the Book, DVD, and CD files BEFORE loading loan records!");
+                    return;
+                }
+                JFileChooser fileChooser = new JFileChooser(".");
+                int response = fileChooser.showOpenDialog(null);
+                if (response == JFileChooser.APPROVE_OPTION) {
+                    parseLoanRecords(fileChooser.getSelectedFile(), textArea);
+                }
+            });
+
+            // trigger top 10 calculations
+            topBooksBtn.addActionListener(e -> displayTop10("Book", textArea));
+            topDvdBtn.addActionListener(e -> displayTop10("DVD", textArea));
+            topCdBtn.addActionListener(e -> displayTop10("CD", textArea));
+
+            // resets the display to show all loaded items
             showAllButton.addActionListener(e -> {
-                if (bookCatalogueMap.isEmpty()) {
+                if (completeCatalogue.isEmpty()) {
                     textArea.setText("The catalogue is empty! Please load a file first.");
                 } else {
-                    // Calls our new helper method to reprint the menu
                     displayDirectory(textArea);
                 }
             });
 
-            // 3. OCLC SEARCH BUTTON
+            // prints the stat report to the GUI
+            displayReportBtn.addActionListener(e -> {
+                if (completeCatalogue.isEmpty()) {
+                    textArea.setText("The catalogue is empty! Please load the library files first.");
+                } else {
+                    textArea.setText(generateReportString());
+                }
+            });
+
+            // saves the stat report to a local txt file
+            saveReportBtn.addActionListener(e -> {
+                if (completeCatalogue.isEmpty()) {
+                    textArea.setText("The catalogue is empty! Please load the library files first.");
+                    return;
+                }
+                try (FileWriter writer = new FileWriter("Library_Catalogue_Report.txt")) {
+                    writer.write(generateReportString());
+                    textArea.setText("SUCCESS! Report safely saved to 'Library_Catalogue_Report.txt'\n");
+                } catch (IOException ex) {
+                    textArea.setText("Error saving file: " + ex.getMessage());
+                }
+            });
+
+            // search for specific item by key
             oclcSearchButton.addActionListener(e -> {
                 String searchKey = oclcSearchField.getText().trim();
                 if (searchKey.isEmpty()) {
                     textArea.setText("Please enter an OCLC number to search.");
                     return;
                 }
-
                 textArea.setText("--- OCLC SEARCH RESULTS ---\n\n");
-                if (bookCatalogueMap.containsKey(searchKey)) {
-                    textArea.append(bookCatalogueMap.get(searchKey).toString());
+                if (completeCatalogue.containsKey(searchKey)) {
+                    textArea.append(completeCatalogue.get(searchKey).toString());
                 } else {
-                    textArea.append("❌ Book with OCLC '" + searchKey + "' not found.");
+                    textArea.append("Record with OCLC '" + searchKey + "' not found.");
                 }
             });
 
-            // 4. GENRE SEARCH BUTTON
+            // loop through catalogue and print titles matching the search genre
             genreSearchButton.addActionListener(e -> {
                 String searchGenre = genreSearchField.getText().trim();
                 if (searchGenre.isEmpty()) {
                     textArea.setText("Please enter a genre to search (e.g., History, Art).");
                     return;
                 }
-
                 textArea.setText("--- GENRE SEARCH RESULTS: " + searchGenre.toUpperCase() + " ---\n\n");
-
-                if (genreMap.containsKey(searchGenre)) {
-                    ArrayList<LibraryBookRecord> genreBooks = genreMap.get(searchGenre);
-                    textArea.append("Found " + genreBooks.size() + " book(s) in this genre:\n\n");
-                    for (LibraryBookRecord book : genreBooks) {
-                        textArea.append(book.toString() + "\n");
+                boolean found = false;
+                for (LibraryItem item : completeCatalogue.values()) {
+                    if (item.getGenre() != null && item.getGenre().equalsIgnoreCase(searchGenre)) {
+                        textArea.append("- " + item.getTitle() + "\n");
+                        found = true;
                     }
-                } else {
-                    textArea.append("❌ No books found for the genre: '" + searchGenre + "'.\n");
+                }
+                if (!found) textArea.append("No records found for the genre: '" + searchGenre + "'.\n");
+            });
+
+            // check which radio button is active and list its genres
+            showGenresBtn.addActionListener(e -> {
+                textArea.setText("--- AVAILABLE GENRES ---\n\n");
+                if (bookRadio.isSelected()) {
+                    textArea.append("Category: BOOKS\n");
+                    for (String genre : bookGenreCounts.keySet()) textArea.append("- " + genre + "\n");
+                } else if (dvdRadio.isSelected()) {
+                    textArea.append("Category: DVDs\n");
+                    for (String genre : dvdGenreCounts.keySet()) textArea.append("- " + genre + "\n");
+                } else if (cdRadio.isSelected()) {
+                    textArea.append("Category: CDs\n");
+                    for (String genre : cdGenreCounts.keySet()) textArea.append("- " + genre + "\n");
                 }
             });
         });
     }
 
-    public static void parseBookCatalogue(File file, JTextArea textArea) {
-        boolean isNextLineTheOCLCNumber = false;
-        boolean isNextLineTheTitle = false;
-        boolean isNextLineTheAuthors = false;
-        boolean isNextLineTheSummary = false;
-        boolean isNextLineThePublicationYear = false;
-        boolean isNextLineTheGenre = false;
+    // --- FILE PARSING METHODS ---
 
-        LibraryBookRecord currentRecord = null;
+    // parses the loan records and totals up days for items with multiple copies
+    public static void parseLoanRecords(File file, JTextArea textArea) {
+        boolean isNextLineOCLC = false;
+        boolean isNextLineDays = false;
+        String currentOclc = null;
+        int currentDays = 0;
 
         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
             String line;
-
             while ((line = reader.readLine()) != null) {
                 line = line.trim();
+                if (line.isEmpty() || line.startsWith("---")) continue;
 
-                if (line.isEmpty() || line.startsWith("---")) {
+                // check flags to grab data from the next line
+                if (isNextLineOCLC) {
+                    currentOclc = line;
+                    isNextLineOCLC = false;
                     continue;
-                }
-
-                if (isNextLineTheOCLCNumber) {
-                    currentRecord.setOclcNumber(line);
-                    isNextLineTheOCLCNumber = false;
-                    continue;
-                }
-                if (line.startsWith("OCLC Number:")) {
-                    if (currentRecord != null && currentRecord.getOclcNumber() != null) {
-                        saveRecordToMaps(currentRecord);
-                    }
-                    currentRecord = new LibraryBookRecord();
-                    isNextLineTheOCLCNumber = true;
+                } else if (line.contains("OCLC")) {
+                    isNextLineOCLC = true;
                     continue;
                 }
 
-                if (isNextLineTheTitle) {
-                    currentRecord.setTitle(line);
-                    isNextLineTheTitle = false;
+                if (isNextLineDays) {
+                    try { currentDays = Integer.parseInt(line); } catch (NumberFormatException e) { }
+                    isNextLineDays = false;
                     continue;
-                }
-                if (line.startsWith("Title:")) {
-                    isNextLineTheTitle = true;
-                    continue;
-                }
-
-                if (isNextLineTheAuthors) {
-                    currentRecord.setAuthors(line);
-                    isNextLineTheAuthors = false;
-                    continue;
-                }
-                if (line.startsWith("Author:") || line.startsWith("Authors:")) {
-                    isNextLineTheAuthors = true;
+                } else if (line.contains("Days")) {
+                    isNextLineDays = true;
                     continue;
                 }
 
-                if (isNextLineTheSummary) {
-                    currentRecord.setSummary(line);
-                    isNextLineTheSummary = false;
-                    continue;
-                }
-                if (line.startsWith("Summary:")) {
-                    isNextLineTheSummary = true;
-                    continue;
-                }
-
-                if (isNextLineThePublicationYear) {
-                    try {
-                        currentRecord.setPublicationYear(Integer.parseInt(line));
-                    } catch (NumberFormatException e) {
-                        System.out.println("Error formatting year: " + line);
-                    }
-                    isNextLineThePublicationYear = false;
-                    continue;
-                }
-                if (line.startsWith("Year of publication:") || line.startsWith("Publication Year:")) {
-                    isNextLineThePublicationYear = true;
-                    continue;
-                }
-
-                if (isNextLineTheGenre) {
-                    currentRecord.setGenre(line);
-                    isNextLineTheGenre = false;
-                    continue;
-                }
-                if (line.startsWith("Genre:")) {
-                    isNextLineTheGenre = true;
-                    continue;
+                // add to map once we have both fields for a record
+                if (currentOclc != null && currentDays > 0) {
+                    totalLoanDaysMap.put(currentOclc, totalLoanDaysMap.getOrDefault(currentOclc, 0) + currentDays);
+                    currentOclc = null; // reset for next record
+                    currentDays = 0;
                 }
             }
-
-            if (currentRecord != null && currentRecord.getOclcNumber() != null) {
-                saveRecordToMaps(currentRecord);
-            }
-
-            // Once parsing is done, call our helper method to show the menu!
-            displayDirectory(textArea);
-
+            textArea.setText("SUCCESS! Loan records parsed and added to memory.\n");
+            textArea.append("You can now use the 'Top 10' buttons.");
         } catch (IOException e) {
-            textArea.setText("Error reading file: " + e.getMessage() + "\n");
+            textArea.setText("Error reading loan file: " + e.getMessage());
         }
     }
 
-    // --- HELPER METHODS ---
+    // reads book file and creates book objects
+    public static void parseBookCatalogue(File file, JTextArea textArea) {
+        boolean isNextLineOCLC = false, isNextLineTitle = false, isNextLineAuthors = false;
+        boolean isNextLineSummary = false, isNextLineYear = false, isNextLineGenre = false;
+        boolean isNextLinePublisher = false, isNextLinePhysDesc = false, isNextLineIsbn = false;
 
-    // 1. Helper to save to the maps
-    private static void saveRecordToMaps(LibraryBookRecord record) {
-        bookCatalogueMap.put(record.getOclcNumber(), record);
+        Book currentRecord = null;
 
-        if (record.getGenre() != null && !record.getGenre().isEmpty()) {
-            String bookGenre = record.getGenre();
-            if (!genreMap.containsKey(bookGenre)) {
-                genreMap.put(bookGenre, new ArrayList<>());
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                line = line.trim();
+                if (line.isEmpty() || line.startsWith("---")) continue;
+
+                if (isNextLineOCLC) { currentRecord.setOclcNumber(line); isNextLineOCLC = false; continue; }
+                if (line.startsWith("OCLC Number:")) {
+                    if (currentRecord != null && currentRecord.getOclcNumber() != null) saveRecordToMaps(currentRecord);
+                    currentRecord = new Book();
+                    isNextLineOCLC = true; continue;
+                }
+
+                if (isNextLineTitle) { currentRecord.setTitle(line); isNextLineTitle = false; continue; }
+                if (line.startsWith("Title:")) { isNextLineTitle = true; continue; }
+
+                if (isNextLineAuthors) { currentRecord.setAuthors(line); isNextLineAuthors = false; continue; }
+                if (line.startsWith("Author:") || line.startsWith("Authors:")) { isNextLineAuthors = true; continue; }
+
+                if (isNextLineSummary) { currentRecord.setSummary(line); isNextLineSummary = false; continue; }
+                if (line.startsWith("Summary:")) { isNextLineSummary = true; continue; }
+
+                if (isNextLineYear) {
+                    try { currentRecord.setYear(Integer.parseInt(line)); } catch (NumberFormatException e) { }
+                    isNextLineYear = false; continue;
+                }
+                if (line.startsWith("Year of publication:") || line.startsWith("Publication Year:")) { isNextLineYear = true; continue; }
+
+                if (isNextLinePublisher) { currentRecord.setPublisher(line); isNextLinePublisher = false; continue; }
+                if (line.startsWith("Publisher:")) { isNextLinePublisher = true; continue; }
+
+                if (isNextLineGenre) { currentRecord.setGenre(line); isNextLineGenre = false; continue; }
+                if (line.startsWith("Genre:")) { isNextLineGenre = true; continue; }
+
+                if (isNextLinePhysDesc) { currentRecord.setPhysicalDescription(line); isNextLinePhysDesc = false; continue; }
+                if (line.startsWith("Physical Description:")) { isNextLinePhysDesc = true; continue; }
+
+                if (isNextLineIsbn) { currentRecord.setIsbn(line); isNextLineIsbn = false; continue; }
+                if (line.startsWith("ISBN:")) { isNextLineIsbn = true; continue; }
             }
-            genreMap.get(bookGenre).add(record);
+            // save the last record in the file
+            if (currentRecord != null && currentRecord.getOclcNumber() != null) saveRecordToMaps(currentRecord);
+            displayDirectory(textArea);
+        } catch (IOException e) { textArea.setText("Error reading file: " + e.getMessage() + "\n"); }
+    }
+
+    // reads dvd file and creates dvd objects
+    public static void parseDVDCatalogue(File file, JTextArea textArea) {
+        boolean isNextLineOCLC = false, isNextLineTitle = false, isNextLineCast = false;
+        boolean isNextLineCredits = false, isNextLinePlot = false, isNextLineYear = false;
+        boolean isNextLineLanguage = false, isNextLinePublisher = false, isNextLineGenre = false;
+        boolean isNextLinePhysDesc = false, isNextLineIsbn = false;
+
+        DVD currentRecord = null;
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                line = line.trim();
+                if (line.isEmpty() || line.startsWith("---")) continue;
+
+                if (isNextLineOCLC) { currentRecord.setOclcNumber(line); isNextLineOCLC = false; continue; }
+                if (line.startsWith("OCLC Number:")) {
+                    if (currentRecord != null && currentRecord.getOclcNumber() != null) saveRecordToMaps(currentRecord);
+                    currentRecord = new DVD();
+                    isNextLineOCLC = true; continue;
+                }
+
+                if (isNextLineTitle) { currentRecord.setTitle(line); isNextLineTitle = false; continue; }
+                if (line.startsWith("Title:")) { isNextLineTitle = true; continue; }
+
+                if (isNextLineCast) { currentRecord.setCast(line); isNextLineCast = false; continue; }
+                if (line.startsWith("Cast:")) { isNextLineCast = true; continue; }
+
+                if (isNextLineCredits) { currentRecord.setCredits(line); isNextLineCredits = false; continue; }
+                if (line.startsWith("Credits:")) { isNextLineCredits = true; continue; }
+
+                if (isNextLinePlot) { currentRecord.setPlot(line); isNextLinePlot = false; continue; }
+                if (line.startsWith("Plot:")) { isNextLinePlot = true; continue; }
+
+                if (isNextLineYear) {
+                    try { currentRecord.setYear(Integer.parseInt(line)); } catch (NumberFormatException e) { }
+                    isNextLineYear = false; continue;
+                }
+                if (line.startsWith("Year of release:")) { isNextLineYear = true; continue; }
+
+                if (isNextLineLanguage) { currentRecord.setLanguage(line); isNextLineLanguage = false; continue; }
+                if (line.startsWith("Language:")) { isNextLineLanguage = true; continue; }
+
+                if (isNextLinePublisher) { currentRecord.setPublisher(line); isNextLinePublisher = false; continue; }
+                if (line.startsWith("Publisher:")) { isNextLinePublisher = true; continue; }
+
+                if (isNextLineGenre) { currentRecord.setGenre(line); isNextLineGenre = false; continue; }
+                if (line.startsWith("Genre:")) { isNextLineGenre = true; continue; }
+
+                if (isNextLinePhysDesc) { currentRecord.setPhysicalDescription(line); isNextLinePhysDesc = false; continue; }
+                if (line.startsWith("Physical Description:")) { isNextLinePhysDesc = true; continue; }
+
+                if (isNextLineIsbn) { currentRecord.setIsbn(line); isNextLineIsbn = false; continue; }
+                if (line.startsWith("ISBN:")) { isNextLineIsbn = true; continue; }
+            }
+            if (currentRecord != null && currentRecord.getOclcNumber() != null) saveRecordToMaps(currentRecord);
+            displayDirectory(textArea);
+        } catch (IOException e) { textArea.setText("Error reading file: " + e.getMessage() + "\n"); }
+    }
+
+    // reads cd file and creates cd objects
+    public static void parseCDCatalogue(File file, JTextArea textArea) {
+        boolean isNextLineOCLC = false, isNextLineTitle = false, isNextLinePerformers = false;
+        boolean isNextLineCredits = false, isNextLineDescription = false, isNextLineYear = false;
+        boolean isNextLineLanguage = false, isNextLinePublisher = false, isNextLineGenre = false;
+        boolean isNextLinePhysDesc = false, isNextLineIsbn = false;
+
+        CD currentRecord = null;
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                line = line.trim();
+                if (line.isEmpty() || line.startsWith("---")) continue;
+
+                if (isNextLineOCLC) { currentRecord.setOclcNumber(line); isNextLineOCLC = false; continue; }
+                if (line.startsWith("OCLC Number:")) {
+                    if (currentRecord != null && currentRecord.getOclcNumber() != null) saveRecordToMaps(currentRecord);
+                    currentRecord = new CD();
+                    isNextLineOCLC = true; continue;
+                }
+
+                if (isNextLineTitle) { currentRecord.setTitle(line); isNextLineTitle = false; continue; }
+                if (line.startsWith("Title:")) { isNextLineTitle = true; continue; }
+
+                if (isNextLinePerformers) { currentRecord.setPerformers(line); isNextLinePerformers = false; continue; }
+                if (line.startsWith("Performers:")) { isNextLinePerformers = true; continue; }
+
+                if (isNextLineCredits) { currentRecord.setCredits(line); isNextLineCredits = false; continue; }
+                if (line.startsWith("Credits:")) { isNextLineCredits = true; continue; }
+
+                if (isNextLineDescription) { currentRecord.setDescription(line); isNextLineDescription = false; continue; }
+                if (line.startsWith("Description:")) { isNextLineDescription = true; continue; }
+
+                if (isNextLineYear) {
+                    try { currentRecord.setYear(Integer.parseInt(line)); } catch (NumberFormatException e) { }
+                    isNextLineYear = false; continue;
+                }
+                if (line.startsWith("Year of release:")) { isNextLineYear = true; continue; }
+
+                if (isNextLineLanguage) { currentRecord.setLanguage(line); isNextLineLanguage = false; continue; }
+                if (line.startsWith("Language:")) { isNextLineLanguage = true; continue; }
+
+                if (isNextLinePublisher) { currentRecord.setPublisher(line); isNextLinePublisher = false; continue; }
+                if (line.startsWith("Publisher:")) { isNextLinePublisher = true; continue; }
+
+                if (isNextLineGenre) { currentRecord.setGenre(line); isNextLineGenre = false; continue; }
+                if (line.startsWith("Genre:")) { isNextLineGenre = true; continue; }
+
+                if (isNextLinePhysDesc) { currentRecord.setPhysicalDescription(line); isNextLinePhysDesc = false; continue; }
+                if (line.startsWith("Physical Description:")) { isNextLinePhysDesc = true; continue; }
+
+                if (isNextLineIsbn) { currentRecord.setIsbn(line); isNextLineIsbn = false; continue; }
+                if (line.startsWith("ISBN:")) { isNextLineIsbn = true; continue; }
+            }
+            if (currentRecord != null && currentRecord.getOclcNumber() != null) saveRecordToMaps(currentRecord);
+            displayDirectory(textArea);
+        } catch (IOException e) { textArea.setText("Error reading file: " + e.getMessage() + "\n"); }
+    }
+
+
+    // --- DATA HANDLING AND CALCULATION METHODS ---
+
+    // stores object in main map and increments genre counters for reports
+    private static void saveRecordToMaps(LibraryItem item) {
+        completeCatalogue.put(item.getOclcNumber(), item);
+        String genre = item.getGenre();
+        if (genre == null || genre.isEmpty()) return;
+
+        if (item instanceof Book) bookGenreCounts.put(genre, bookGenreCounts.getOrDefault(genre, 0) + 1);
+        else if (item instanceof DVD) dvdGenreCounts.put(genre, dvdGenreCounts.getOrDefault(genre, 0) + 1);
+        else if (item instanceof CD) cdGenreCounts.put(genre, cdGenreCounts.getOrDefault(genre, 0) + 1);
+    }
+
+    // generic method to list everything currently loaded
+    private static void displayDirectory(JTextArea textArea) {
+        textArea.setText("Total unique items in Catalogue: " + completeCatalogue.size() + "\n\n");
+        textArea.append("AVAILABLE DIRECTORY:\n--------------------------------------------------\n");
+        for (LibraryItem item : completeCatalogue.values()) {
+            textArea.append("OCLC: " + item.getOclcNumber() + "  |  Title: " + item.getTitle() + "\n");
+        }
+        textArea.append("--------------------------------------------------\n");
+    }
+
+    // calculates top 10 loans based on selected type
+    private static void displayTop10(String type, JTextArea textArea) {
+        if (totalLoanDaysMap.isEmpty()) {
+            textArea.setText("Please load the Loan Records file first!");
+            return;
+        }
+
+        // filter list to only contain the requested category
+        ArrayList<Map.Entry<String, Integer>> validLoans = new ArrayList<>();
+
+        for (Map.Entry<String, Integer> entry : totalLoanDaysMap.entrySet()) {
+            LibraryItem item = completeCatalogue.get(entry.getKey());
+            if (item != null) {
+                if (type.equals("Book") && item instanceof Book) validLoans.add(entry);
+                else if (type.equals("DVD") && item instanceof DVD) validLoans.add(entry);
+                else if (type.equals("CD") && item instanceof CD) validLoans.add(entry);
+            }
+        }
+
+        // sort descending using comparator
+        Collections.sort(validLoans, new Comparator<Map.Entry<String, Integer>>() {
+            public int compare(Map.Entry<String, Integer> a, Map.Entry<String, Integer> b) {
+                return b.getValue().compareTo(a.getValue());
+            }
+        });
+
+        textArea.setText("--- TOP 10 LONGEST LOANS: " + type.toUpperCase() + "S ---\n\n");
+
+        int count = 0;
+        for (Map.Entry<String, Integer> entry : validLoans) {
+            if (count >= 10) break; // only print top 10
+
+            int totalDays = entry.getValue();
+
+            // convert days to weeks (rounding up using modulo trick)
+            int weeks = totalDays / 7;
+            if (totalDays % 7 > 0) {
+                weeks = weeks + 1;
+            }
+
+            LibraryItem item = completeCatalogue.get(entry.getKey());
+            textArea.append((count + 1) + ". " + item.getTitle() + "\n");
+            textArea.append("   Total Time on Loan: " + weeks + " weeks (" + totalDays + " total days)\n\n");
+
+            count++;
+        }
+
+        if (count == 0) {
+            textArea.append("No loan records found for this category.");
         }
     }
 
-    // 2. NEW: Helper to print the Directory Menu
-    private static void displayDirectory(JTextArea textArea) {
-        // We use .setText() to clear the screen of any old search results
-        textArea.setText("Total unique books in Catalogue: " + bookCatalogueMap.size() + "\n\n");
-        textArea.append("AVAILABLE BOOKS DIRECTORY:\n");
-        textArea.append("--------------------------------------------------\n");
+    // builds the big stat report text
+    private static String generateReportString() {
+        int totalItems = completeCatalogue.size();
 
-        for (LibraryBookRecord book : bookCatalogueMap.values()) {
-            textArea.append("OCLC: " + book.getOclcNumber() + "  |  Title: " + book.getTitle() + "\n");
-        }
+        // sum up totals from the genre maps
+        int totalBooks = 0; for (int count : bookGenreCounts.values()) totalBooks += count;
+        int totalDVDs = 0; for (int count : dvdGenreCounts.values()) totalDVDs += count;
+        int totalCDs = 0; for (int count : cdGenreCounts.values()) totalCDs += count;
 
-        textArea.append("--------------------------------------------------\n");
-        textArea.append("Tip: Copy an OCLC number or a Genre (like 'History') to use the search boxes above!\n\n");
+        StringBuilder report = new StringBuilder();
+        report.append("=========================================\n");
+        report.append("       LIBRARY CATALOGUE REPORT\n");
+        report.append("=========================================\n\n");
+        report.append("Total unique library items: ").append(totalItems).append("\n");
+        report.append(" - Total Books: ").append(totalBooks).append("\n");
+        report.append(" - Total DVDs: ").append(totalDVDs).append("\n");
+        report.append(" - Total CDs: ").append(totalCDs).append("\n\n");
+
+        report.append("--- GENRE STATISTICS ---\n\n");
+        report.append("Unique Book Genres (").append(bookGenreCounts.size()).append(" total):\n");
+        for (Map.Entry<String, Integer> entry : bookGenreCounts.entrySet()) report.append("  * ").append(entry.getKey()).append(": ").append(entry.getValue()).append(" item(s)\n");
+
+        report.append("\nUnique DVD Genres (").append(dvdGenreCounts.size()).append(" total):\n");
+        for (Map.Entry<String, Integer> entry : dvdGenreCounts.entrySet()) report.append("  * ").append(entry.getKey()).append(": ").append(entry.getValue()).append(" item(s)\n");
+
+        report.append("\nUnique CD Genres (").append(cdGenreCounts.size()).append(" total):\n");
+        for (Map.Entry<String, Integer> entry : cdGenreCounts.entrySet()) report.append("  * ").append(entry.getKey()).append(": ").append(entry.getValue()).append(" item(s)\n");
+
+        return report.toString();
     }
 }
