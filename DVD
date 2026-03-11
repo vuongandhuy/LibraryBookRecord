@@ -7,60 +7,48 @@ public class DVD extends LibraryItem {
     private String publisher;
     private String physicalDescription;
     private String isbn;
-//Getter
+    //Getter
     public String getCast() {
         return cast;
-    }
-
-    public void setCast(String cast) {
-        this.cast = cast;
     }
 
     public String getCredits() {
         return credits;
     }
-
-    public void setCredits(String credits) {
-        this.credits = credits;
-    }
-
     public String getPlot() {
         return plot;
     }
-
-    public void setPlot(String plot) {
-        this.plot = plot;
-    }
-
     public String getLanguage() {
         return language;
     }
-    //Setter
-
-    public void setLanguage(String language) {
-        this.language = language;
-    }
-
     public String getPublisher() {
         return publisher;
     }
-
-    public void setPublisher(String publisher) {
-        this.publisher = publisher;
-    }
-
     public String getPhysicalDescription() {
         return physicalDescription;
     }
-
-    public void setPhysicalDescription(String physicalDescription) {
-        this.physicalDescription = physicalDescription;
-    }
-
     public String getIsbn() {
         return isbn;
     }
-
+    //Setter
+    public void setCast(String cast) {
+        this.cast = cast;
+    }
+    public void setCredits(String credits) {
+        this.credits = credits;
+    }
+    public void setPlot(String plot) {
+        this.plot = plot;
+    }
+    public void setLanguage(String language) {
+        this.language = language;
+    }
+    public void setPublisher(String publisher) {
+        this.publisher = publisher;
+    }
+    public void setPhysicalDescription(String physicalDescription) {
+        this.physicalDescription = physicalDescription;
+    }
     public void setIsbn(String isbn) {
         this.isbn = isbn;
     }
