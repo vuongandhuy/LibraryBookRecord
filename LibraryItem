@@ -1,0 +1,41 @@
+public class LibraryItem {
+    private String oclcNumber;
+    private String title;
+    private String genre;
+    private int year;
+    private String publisher;
+    private String physicalDescription;
+    private String isbn;
+//Getter
+    public String getOclcNumber() { return oclcNumber; }
+    public void setOclcNumber(String oclcNumber) { this.oclcNumber = oclcNumber; }
+
+    public String getTitle() { return title; }
+    public void setTitle(String title) { this.title = title; }
+
+    public String getGenre() { return genre; }
+    public void setGenre(String genre) { this.genre = genre; }
+
+    public int getYear() { return year; }
+    public void setYear(int year) { this.year = year; }
+
+    public String getPublisher() { return publisher; }
+    public void setPublisher(String publisher) { this.publisher = publisher; }
+
+    public String getPhysicalDescription() { return physicalDescription; }
+    public void setPhysicalDescription(String physicalDescription) { this.physicalDescription = physicalDescription; }
+
+    public String getIsbn() { return isbn; }
+    public void setIsbn(String isbn) { this.isbn = isbn; }
+
+    @Override
+    public String toString() {
+        return "OCLC: " + oclcNumber + "\n" +
+                "Title: " + title + "\n" +
+                "Genre: " + genre + "\n" +
+                "Year: " + year + "\n" +
+                "Publisher: " + publisher + "\n" +
+                "Physical Description: " + physicalDescription + "\n" +
+                "ISBN: " + isbn + "\n";
+    }
+}
