@@ -8,7 +8,6 @@ public class CD extends LibraryItem {
     private String physicalDescription;
     private String isbn;
 
-    //Getter
     public String getPerformers() {
         return performers;
     }
@@ -44,7 +43,6 @@ public class CD extends LibraryItem {
     public String getPublisher() {
         return publisher;
     }
-    //Setter
 
     public void setPublisher(String publisher) {
         this.publisher = publisher;
