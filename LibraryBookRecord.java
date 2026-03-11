@@ -60,7 +60,7 @@ public class LibraryBookRecord {
     @Override
     public String toString() {
         // We build a single string that combines all the book's details
-        return "Book Details:\n" +
+        return "Book.java Details:\n" +
                 "------------------------------\n" +
                 "OCLC: " + oclcNumber + "\n" +
                 "Title: " + title + "\n" +
