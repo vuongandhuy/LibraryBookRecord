@@ -247,12 +247,19 @@ public class MainGUI {
                 line = line.trim();
                 if (line.isEmpty() || line.startsWith("---")) continue;
 
-                // check flags to grab data from the next line
                 if (isNextLineOCLC) {
                     currentOclc = line;
                     isNextLineOCLC = false;
                     continue;
-                } else if (line.contains("OCLC")) {
+                }
+                if (line.startsWith("OCLC Number:")) {
+                    // Before starting a new record, save the previous one to the Map!
+                    if (currentOclc != null && currentDays > 0) {
+                        totalLoanDaysMap.put(currentOclc, totalLoanDaysMap.getOrDefault(currentOclc, 0) + currentDays);
+                    }
+                    // Reset variables for the new record
+                    currentOclc = null;
+                    currentDays = 0;
                     isNextLineOCLC = true;
                     continue;
                 }
@@ -261,18 +268,18 @@ public class MainGUI {
                     try { currentDays = Integer.parseInt(line); } catch (NumberFormatException e) { }
                     isNextLineDays = false;
                     continue;
-                } else if (line.contains("Days")) {
+                }
+                if (line.startsWith("ON LOAN:")) {
                     isNextLineDays = true;
                     continue;
                 }
-
-                // add to map once we have both fields for a record
-                if (currentOclc != null && currentDays > 0) {
-                    totalLoanDaysMap.put(currentOclc, totalLoanDaysMap.getOrDefault(currentOclc, 0) + currentDays);
-                    currentOclc = null; // reset for next record
-                    currentDays = 0;
-                }
             }
+
+            // Catch and save the very last record in the text file
+            if (currentOclc != null && currentDays > 0) {
+                totalLoanDaysMap.put(currentOclc, totalLoanDaysMap.getOrDefault(currentOclc, 0) + currentDays);
+            }
+
             textArea.setText("SUCCESS! Loan records parsed and added to memory.\n");
             textArea.append("You can now use the 'Top 10' buttons.");
         } catch (IOException e) {
