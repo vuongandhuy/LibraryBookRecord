@@ -2,7 +2,7 @@ public class Book extends LibraryItem {
 
     private String authors;
     private String summary;
-
+//Getter and Setter
     public String getAuthors() {
         return authors;
     }
