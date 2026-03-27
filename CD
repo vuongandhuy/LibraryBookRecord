@@ -7,7 +7,7 @@ public class CD extends LibraryItem {
     private String publisher;
     private String physicalDescription;
     private String isbn;
-
+//Getter and Setter
     public String getPerformers() {
         return performers;
     }
