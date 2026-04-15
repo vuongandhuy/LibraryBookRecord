@@ -12,7 +12,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class MainGUI {
 
@@ -24,9 +23,6 @@ public class MainGUI {
 
     // map for Task C to keep a running total of loan days for each OCLC
     private static Map<String, Integer> totalLoanDaysMap = new HashMap<>();
-
-    //Temporary storage for the generated JSON before saving
-    private static String currentJsonOutput = "";
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
@@ -44,19 +40,18 @@ public class MainGUI {
             JPanel row3 = new JPanel();
             JPanel row4 = new JPanel();
             JPanel row5 = new JPanel();
+            JPanel row6 = new JPanel();
 
             // row 1: basic file loading and report generation
             JButton loadButton = new JButton("Load File");
             JButton showAllButton = new JButton("Show All Items");
             JButton displayReportBtn = new JButton("Display Report");
             JButton saveReportBtn = new JButton("Save Report");
-            JButton displayJsonBtn = new JButton("Display JSON");
 
             row1.add(loadButton);
             row1.add(showAllButton);
             row1.add(displayReportBtn);
             row1.add(saveReportBtn);
-            row1.add(displayJsonBtn);
 
             // row 2: search functionality for specific items and genres
             JLabel oclcSearchLabel = new JLabel("Search OCLC:");
@@ -114,12 +109,18 @@ public class MainGUI {
             row5.add(btnJsonDVDs);
             row5.add(btnJsonCDs);
 
+            // row 6: Custom XML Export buttons
+            JButton btnGenerateXml = new JButton("Generate XML Hierarchy");
+            row6.add(new JLabel("XML Classification: "));
+            row6.add(btnGenerateXml);
+
             // add all rows to the main top panel
             topControls.add(row1);
             topControls.add(row2);
             topControls.add(row3);
             topControls.add(row4);
             topControls.add(row5);
+            topControls.add(row6);
 
             // setup text area for displaying results
             JTextArea textArea = new JTextArea();
@@ -132,20 +133,26 @@ public class MainGUI {
 
             // --- EVENT LISTENERS ---
 
+            // XML Button Listener
+            btnGenerateXml.addActionListener(e -> {
+                if (completeCatalogue.isEmpty()) {
+                    textArea.setText("The catalogue is empty! Please load the library files first.");
+                } else {
+                    displayXMLHierarchy(textArea);
+                }
+            });
+
             // json button listeners
             btnJsonBooks.addActionListener(e -> {
-                currentJsonOutput = generateJSONForCategory("Book");
-                textArea.setText("--- BOOKS JSON READY ---\n\n" + currentJsonOutput);
+                textArea.setText("--- BOOKS JSON READY ---\n\n" + generateJSONForCategory("Book"));
             });
 
             btnJsonDVDs.addActionListener(e -> {
-                currentJsonOutput = generateJSONForCategory("DVD");
-                textArea.setText("--- DVDs JSON READY ---\n\n" + currentJsonOutput);
+                textArea.setText("--- DVDs JSON READY ---\n\n" + generateJSONForCategory("DVD"));
             });
 
             btnJsonCDs.addActionListener(e -> {
-                currentJsonOutput = generateJSONForCategory("CD");
-                textArea.setText("--- CDs JSON READY ---\n\n" + currentJsonOutput);
+                textArea.setText("--- CDs JSON READY ---\n\n" + generateJSONForCategory("CD"));
             });
 
             // handles opening files and routing to the correct parser
@@ -841,5 +848,41 @@ public class MainGUI {
         }
         sb.append("]");
         return sb.toString();
+    }
+
+    // Generate and display the XML hierarchy
+    private static void displayXMLHierarchy(JTextArea textArea) {
+        StringBuilder sb = new StringBuilder("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<LIBRARY_COLLECTION>\n");
+        String[] types = {"Book", "DVD", "CD"};
+
+        for (String type : types) {
+            sb.append("  <").append(type.toUpperCase()).append("_COLLECTION>\n");
+
+            // Group items by genre automatically using a Java Stream
+            Map<String, List<LibraryItem>> grouped = completeCatalogue.values().stream()
+                    .filter(item -> item.getClass().getSimpleName().equals(type))
+                    .collect(Collectors.groupingBy(item -> item.getGenre() != null ? item.getGenre() : "Unknown"));
+
+            // Loop through each genre group and print the records
+            for (String genre : grouped.keySet()) {
+                String safeGenre = genre.replace("&", "&amp;"); // clean XML characters
+                sb.append("    <").append(type.toUpperCase()).append("_GENRE name=\"").append(safeGenre).append("\">\n");
+
+                for (LibraryItem item : grouped.get(genre)) {
+                    String safeTitle = item.getTitle().replace("&", "&amp;");
+                    sb.append("      <Record>")
+                            .append(safeTitle).append(" &amp; OCLC NUMBER: ")
+                            .append(item.getOclcNumber()).append(" / ").append(safeGenre)
+                            .append("</Record>\n");
+                }
+                sb.append("    </").append(type.toUpperCase()).append("_GENRE>\n");
+            }
+            sb.append("  </").append(type.toUpperCase()).append("_COLLECTION>\n");
+        }
+        sb.append("</LIBRARY_COLLECTION>");
+
+        // Print it directly to the dashboard
+        textArea.setText(sb.toString());
+        textArea.setCaretPosition(0);
     }
 }
