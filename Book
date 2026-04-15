@@ -28,4 +28,19 @@ public class Book extends LibraryItem {
                 "Summary: " + summary + "\n" +
                 "------------------------------\n";
     }
+    public String toJSON() {
+        String json = "{\n";
+        json += "  \"oclcNumber\": \"" + this.getOclcNumber() + "\",\n";
+        json += "  \"mediaType\": \"Book\",\n";
+        json += "  \"title\": \"" + this.getTitle() + "\",\n";
+        json += "  \"releaseYear\": " + this.getYear() + ",\n";
+        json += "  \"publisher\": \"" + this.getPublisher() + "\",\n";
+        json += "  \"genre\": \"" + this.getGenre() + "\",\n";
+        json += "  \"physicalDescription\": \"" + this.getPhysicalDescription() + "\",\n";
+        json += "  \"isbn\": \"" + this.getIsbn() + "\",\n";
+        json += "  \"authors\": \"" + this.authors + "\",\n";
+        json += "  \"summary\": \"" + this.summary + "\"\n";
+        json += "}";
+        return json;
+    }
 }
