@@ -10,6 +10,9 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class MainGUI {
 
@@ -21,6 +24,9 @@ public class MainGUI {
 
     // map for Task C to keep a running total of loan days for each OCLC
     private static Map<String, Integer> totalLoanDaysMap = new HashMap<>();
+
+    //Temporary storage for the generated JSON before saving
+    private static String currentJsonOutput = "";
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
@@ -37,17 +43,20 @@ public class MainGUI {
             JPanel row2 = new JPanel();
             JPanel row3 = new JPanel();
             JPanel row4 = new JPanel();
+            JPanel row5 = new JPanel();
 
             // row 1: basic file loading and report generation
             JButton loadButton = new JButton("Load File");
             JButton showAllButton = new JButton("Show All Items");
             JButton displayReportBtn = new JButton("Display Report");
             JButton saveReportBtn = new JButton("Save Report");
+            JButton displayJsonBtn = new JButton("Display JSON");
 
             row1.add(loadButton);
             row1.add(showAllButton);
             row1.add(displayReportBtn);
             row1.add(saveReportBtn);
+            row1.add(displayJsonBtn);
 
             // row 2: search functionality for specific items and genres
             JLabel oclcSearchLabel = new JLabel("Search OCLC:");
@@ -95,11 +104,22 @@ public class MainGUI {
             row4.add(topDvdBtn);
             row4.add(topCdBtn);
 
+            // row 5: Custom JSON Export buttons
+            JButton btnJsonBooks = new JButton("Books to JSON");
+            JButton btnJsonDVDs = new JButton("DVDs to JSON");
+            JButton btnJsonCDs = new JButton("CDs to JSON");
+
+            row5.add(new JLabel("Export to JSON: "));
+            row5.add(btnJsonBooks);
+            row5.add(btnJsonDVDs);
+            row5.add(btnJsonCDs);
+
             // add all rows to the main top panel
             topControls.add(row1);
             topControls.add(row2);
             topControls.add(row3);
             topControls.add(row4);
+            topControls.add(row5);
 
             // setup text area for displaying results
             JTextArea textArea = new JTextArea();
@@ -111,6 +131,22 @@ public class MainGUI {
             frame.setVisible(true);
 
             // --- EVENT LISTENERS ---
+
+            // json button listeners
+            btnJsonBooks.addActionListener(e -> {
+                currentJsonOutput = generateJSONForCategory("Book");
+                textArea.setText("--- BOOKS JSON READY ---\n\n" + currentJsonOutput);
+            });
+
+            btnJsonDVDs.addActionListener(e -> {
+                currentJsonOutput = generateJSONForCategory("DVD");
+                textArea.setText("--- DVDs JSON READY ---\n\n" + currentJsonOutput);
+            });
+
+            btnJsonCDs.addActionListener(e -> {
+                currentJsonOutput = generateJSONForCategory("CD");
+                textArea.setText("--- CDs JSON READY ---\n\n" + currentJsonOutput);
+            });
 
             // handles opening files and routing to the correct parser
             loadButton.addActionListener(e -> {
@@ -232,8 +268,6 @@ public class MainGUI {
         });
     }
 
-    // --- FILE PARSING METHODS ---
-
     // parses the loan records and totals up days for items with multiple copies
     public static void parseLoanRecords(File file, JTextArea textArea) {
         boolean isNextLineOCLC = false;
@@ -265,7 +299,10 @@ public class MainGUI {
                 }
 
                 if (isNextLineDays) {
-                    try { currentDays = Integer.parseInt(line); } catch (NumberFormatException e) { }
+                    try {
+                        currentDays = Integer.parseInt(line);
+                    } catch (NumberFormatException e) {
+                    }
                     isNextLineDays = false;
                     continue;
                 }
@@ -301,44 +338,107 @@ public class MainGUI {
                 line = line.trim();
                 if (line.isEmpty() || line.startsWith("---")) continue;
 
-                if (isNextLineOCLC) { currentRecord.setOclcNumber(line); isNextLineOCLC = false; continue; }
+                if (isNextLineOCLC) {
+                    currentRecord.setOclcNumber(line);
+                    isNextLineOCLC = false;
+                    continue;
+                }
                 if (line.startsWith("OCLC Number:")) {
                     if (currentRecord != null && currentRecord.getOclcNumber() != null) saveRecordToMaps(currentRecord);
                     currentRecord = new Book();
-                    isNextLineOCLC = true; continue;
+                    isNextLineOCLC = true;
+                    continue;
                 }
 
-                if (isNextLineTitle) { currentRecord.setTitle(line); isNextLineTitle = false; continue; }
-                if (line.startsWith("Title:")) { isNextLineTitle = true; continue; }
+                if (isNextLineTitle) {
+                    currentRecord.setTitle(line);
+                    isNextLineTitle = false;
+                    continue;
+                }
+                if (line.startsWith("Title:")) {
+                    isNextLineTitle = true;
+                    continue;
+                }
 
-                if (isNextLineAuthors) { currentRecord.setAuthors(line); isNextLineAuthors = false; continue; }
-                if (line.startsWith("Author:") || line.startsWith("Authors:")) { isNextLineAuthors = true; continue; }
+                if (isNextLineAuthors) {
+                    currentRecord.setAuthors(line);
+                    isNextLineAuthors = false;
+                    continue;
+                }
+                if (line.startsWith("Author:") || line.startsWith("Authors:")) {
+                    isNextLineAuthors = true;
+                    continue;
+                }
 
-                if (isNextLineSummary) { currentRecord.setSummary(line); isNextLineSummary = false; continue; }
-                if (line.startsWith("Summary:")) { isNextLineSummary = true; continue; }
+                if (isNextLineSummary) {
+                    currentRecord.setSummary(line);
+                    isNextLineSummary = false;
+                    continue;
+                }
+                if (line.startsWith("Summary:")) {
+                    isNextLineSummary = true;
+                    continue;
+                }
 
                 if (isNextLineYear) {
-                    try { currentRecord.setYear(Integer.parseInt(line)); } catch (NumberFormatException e) { }
-                    isNextLineYear = false; continue;
+                    try {
+                        currentRecord.setYear(Integer.parseInt(line));
+                    } catch (NumberFormatException e) {
+                    }
+                    isNextLineYear = false;
+                    continue;
                 }
-                if (line.startsWith("Year of publication:") || line.startsWith("Publication Year:")) { isNextLineYear = true; continue; }
+                if (line.startsWith("Year of publication:") || line.startsWith("Publication Year:")) {
+                    isNextLineYear = true;
+                    continue;
+                }
 
-                if (isNextLinePublisher) { currentRecord.setPublisher(line); isNextLinePublisher = false; continue; }
-                if (line.startsWith("Publisher:")) { isNextLinePublisher = true; continue; }
+                if (isNextLinePublisher) {
+                    currentRecord.setPublisher(line);
+                    isNextLinePublisher = false;
+                    continue;
+                }
+                if (line.startsWith("Publisher:")) {
+                    isNextLinePublisher = true;
+                    continue;
+                }
 
-                if (isNextLineGenre) { currentRecord.setGenre(line); isNextLineGenre = false; continue; }
-                if (line.startsWith("Genre:")) { isNextLineGenre = true; continue; }
+                if (isNextLineGenre) {
+                    currentRecord.setGenre(line);
+                    isNextLineGenre = false;
+                    continue;
+                }
+                if (line.startsWith("Genre:")) {
+                    isNextLineGenre = true;
+                    continue;
+                }
 
-                if (isNextLinePhysDesc) { currentRecord.setPhysicalDescription(line); isNextLinePhysDesc = false; continue; }
-                if (line.startsWith("Physical Description:")) { isNextLinePhysDesc = true; continue; }
+                if (isNextLinePhysDesc) {
+                    currentRecord.setPhysicalDescription(line);
+                    isNextLinePhysDesc = false;
+                    continue;
+                }
+                if (line.startsWith("Physical Description:")) {
+                    isNextLinePhysDesc = true;
+                    continue;
+                }
 
-                if (isNextLineIsbn) { currentRecord.setIsbn(line); isNextLineIsbn = false; continue; }
-                if (line.startsWith("ISBN:")) { isNextLineIsbn = true; continue; }
+                if (isNextLineIsbn) {
+                    currentRecord.setIsbn(line);
+                    isNextLineIsbn = false;
+                    continue;
+                }
+                if (line.startsWith("ISBN:")) {
+                    isNextLineIsbn = true;
+                    continue;
+                }
             }
             // save the last record in the file
             if (currentRecord != null && currentRecord.getOclcNumber() != null) saveRecordToMaps(currentRecord);
             displayDirectory(textArea);
-        } catch (IOException e) { textArea.setText("Error reading file: " + e.getMessage() + "\n"); }
+        } catch (IOException e) {
+            textArea.setText("Error reading file: " + e.getMessage() + "\n");
+        }
     }
 
     // reads dvd file and creates dvd objects
@@ -356,49 +456,126 @@ public class MainGUI {
                 line = line.trim();
                 if (line.isEmpty() || line.startsWith("---")) continue;
 
-                if (isNextLineOCLC) { currentRecord.setOclcNumber(line); isNextLineOCLC = false; continue; }
+                if (isNextLineOCLC) {
+                    currentRecord.setOclcNumber(line);
+                    isNextLineOCLC = false;
+                    continue;
+                }
                 if (line.startsWith("OCLC Number:")) {
                     if (currentRecord != null && currentRecord.getOclcNumber() != null) saveRecordToMaps(currentRecord);
                     currentRecord = new DVD();
-                    isNextLineOCLC = true; continue;
+                    isNextLineOCLC = true;
+                    continue;
                 }
 
-                if (isNextLineTitle) { currentRecord.setTitle(line); isNextLineTitle = false; continue; }
-                if (line.startsWith("Title:")) { isNextLineTitle = true; continue; }
+                if (isNextLineTitle) {
+                    currentRecord.setTitle(line);
+                    isNextLineTitle = false;
+                    continue;
+                }
+                if (line.startsWith("Title:")) {
+                    isNextLineTitle = true;
+                    continue;
+                }
 
-                if (isNextLineCast) { currentRecord.setCast(line); isNextLineCast = false; continue; }
-                if (line.startsWith("Cast:")) { isNextLineCast = true; continue; }
+                if (isNextLineCast) {
+                    currentRecord.setCast(line);
+                    isNextLineCast = false;
+                    continue;
+                }
+                if (line.startsWith("Cast:")) {
+                    isNextLineCast = true;
+                    continue;
+                }
 
-                if (isNextLineCredits) { currentRecord.setCredits(line); isNextLineCredits = false; continue; }
-                if (line.startsWith("Credits:")) { isNextLineCredits = true; continue; }
+                if (isNextLineCredits) {
+                    currentRecord.setCredits(line);
+                    isNextLineCredits = false;
+                    continue;
+                }
+                if (line.startsWith("Credits:")) {
+                    isNextLineCredits = true;
+                    continue;
+                }
 
-                if (isNextLinePlot) { currentRecord.setPlot(line); isNextLinePlot = false; continue; }
-                if (line.startsWith("Plot:")) { isNextLinePlot = true; continue; }
+                if (isNextLinePlot) {
+                    currentRecord.setPlot(line);
+                    isNextLinePlot = false;
+                    continue;
+                }
+                if (line.startsWith("Plot:")) {
+                    isNextLinePlot = true;
+                    continue;
+                }
 
                 if (isNextLineYear) {
-                    try { currentRecord.setYear(Integer.parseInt(line)); } catch (NumberFormatException e) { }
-                    isNextLineYear = false; continue;
+                    try {
+                        currentRecord.setYear(Integer.parseInt(line));
+                    } catch (NumberFormatException e) {
+                    }
+                    isNextLineYear = false;
+                    continue;
                 }
-                if (line.startsWith("Year of release:")) { isNextLineYear = true; continue; }
+                if (line.startsWith("Year of release:")) {
+                    isNextLineYear = true;
+                    continue;
+                }
 
-                if (isNextLineLanguage) { currentRecord.setLanguage(line); isNextLineLanguage = false; continue; }
-                if (line.startsWith("Language:")) { isNextLineLanguage = true; continue; }
+                if (isNextLineLanguage) {
+                    currentRecord.setLanguage(line);
+                    isNextLineLanguage = false;
+                    continue;
+                }
+                if (line.startsWith("Language:")) {
+                    isNextLineLanguage = true;
+                    continue;
+                }
 
-                if (isNextLinePublisher) { currentRecord.setPublisher(line); isNextLinePublisher = false; continue; }
-                if (line.startsWith("Publisher:")) { isNextLinePublisher = true; continue; }
+                if (isNextLinePublisher) {
+                    currentRecord.setPublisher(line);
+                    isNextLinePublisher = false;
+                    continue;
+                }
+                if (line.startsWith("Publisher:")) {
+                    isNextLinePublisher = true;
+                    continue;
+                }
 
-                if (isNextLineGenre) { currentRecord.setGenre(line); isNextLineGenre = false; continue; }
-                if (line.startsWith("Genre:")) { isNextLineGenre = true; continue; }
+                if (isNextLineGenre) {
+                    currentRecord.setGenre(line);
+                    isNextLineGenre = false;
+                    continue;
+                }
+                if (line.startsWith("Genre:")) {
+                    isNextLineGenre = true;
+                    continue;
+                }
 
-                if (isNextLinePhysDesc) { currentRecord.setPhysicalDescription(line); isNextLinePhysDesc = false; continue; }
-                if (line.startsWith("Physical Description:")) { isNextLinePhysDesc = true; continue; }
+                if (isNextLinePhysDesc) {
+                    currentRecord.setPhysicalDescription(line);
+                    isNextLinePhysDesc = false;
+                    continue;
+                }
+                if (line.startsWith("Physical Description:")) {
+                    isNextLinePhysDesc = true;
+                    continue;
+                }
 
-                if (isNextLineIsbn) { currentRecord.setIsbn(line); isNextLineIsbn = false; continue; }
-                if (line.startsWith("ISBN:")) { isNextLineIsbn = true; continue; }
+                if (isNextLineIsbn) {
+                    currentRecord.setIsbn(line);
+                    isNextLineIsbn = false;
+                    continue;
+                }
+                if (line.startsWith("ISBN:")) {
+                    isNextLineIsbn = true;
+                    continue;
+                }
             }
             if (currentRecord != null && currentRecord.getOclcNumber() != null) saveRecordToMaps(currentRecord);
             displayDirectory(textArea);
-        } catch (IOException e) { textArea.setText("Error reading file: " + e.getMessage() + "\n"); }
+        } catch (IOException e) {
+            textArea.setText("Error reading file: " + e.getMessage() + "\n");
+        }
     }
 
     // reads cd file and creates cd objects
@@ -416,53 +593,127 @@ public class MainGUI {
                 line = line.trim();
                 if (line.isEmpty() || line.startsWith("---")) continue;
 
-                if (isNextLineOCLC) { currentRecord.setOclcNumber(line); isNextLineOCLC = false; continue; }
+                if (isNextLineOCLC) {
+                    currentRecord.setOclcNumber(line);
+                    isNextLineOCLC = false;
+                    continue;
+                }
                 if (line.startsWith("OCLC Number:")) {
                     if (currentRecord != null && currentRecord.getOclcNumber() != null) saveRecordToMaps(currentRecord);
                     currentRecord = new CD();
-                    isNextLineOCLC = true; continue;
+                    isNextLineOCLC = true;
+                    continue;
                 }
 
-                if (isNextLineTitle) { currentRecord.setTitle(line); isNextLineTitle = false; continue; }
-                if (line.startsWith("Title:")) { isNextLineTitle = true; continue; }
+                if (isNextLineTitle) {
+                    currentRecord.setTitle(line);
+                    isNextLineTitle = false;
+                    continue;
+                }
+                if (line.startsWith("Title:")) {
+                    isNextLineTitle = true;
+                    continue;
+                }
 
-                if (isNextLinePerformers) { currentRecord.setPerformers(line); isNextLinePerformers = false; continue; }
-                if (line.startsWith("Performers:")) { isNextLinePerformers = true; continue; }
+                if (isNextLinePerformers) {
+                    currentRecord.setPerformers(line);
+                    isNextLinePerformers = false;
+                    continue;
+                }
+                if (line.startsWith("Performers:")) {
+                    isNextLinePerformers = true;
+                    continue;
+                }
 
-                if (isNextLineCredits) { currentRecord.setCredits(line); isNextLineCredits = false; continue; }
-                if (line.startsWith("Credits:")) { isNextLineCredits = true; continue; }
+                if (isNextLineCredits) {
+                    currentRecord.setCredits(line);
+                    isNextLineCredits = false;
+                    continue;
+                }
+                if (line.startsWith("Credits:")) {
+                    isNextLineCredits = true;
+                    continue;
+                }
 
-                if (isNextLineDescription) { currentRecord.setDescription(line); isNextLineDescription = false; continue; }
-                if (line.startsWith("Description:")) { isNextLineDescription = true; continue; }
+                if (isNextLineDescription) {
+                    currentRecord.setDescription(line);
+                    isNextLineDescription = false;
+                    continue;
+                }
+                if (line.startsWith("Description:")) {
+                    isNextLineDescription = true;
+                    continue;
+                }
 
                 if (isNextLineYear) {
-                    try { currentRecord.setYear(Integer.parseInt(line)); } catch (NumberFormatException e) { }
-                    isNextLineYear = false; continue;
+                    try {
+                        currentRecord.setYear(Integer.parseInt(line));
+                    } catch (NumberFormatException e) {
+                    }
+                    isNextLineYear = false;
+                    continue;
                 }
-                if (line.startsWith("Year of release:")) { isNextLineYear = true; continue; }
+                if (line.startsWith("Year of release:")) {
+                    isNextLineYear = true;
+                    continue;
+                }
 
-                if (isNextLineLanguage) { currentRecord.setLanguage(line); isNextLineLanguage = false; continue; }
-                if (line.startsWith("Language:")) { isNextLineLanguage = true; continue; }
+                if (isNextLineLanguage) {
+                    currentRecord.setLanguage(line);
+                    isNextLineLanguage = false;
+                    continue;
+                }
+                if (line.startsWith("Language:")) {
+                    isNextLineLanguage = true;
+                    continue;
+                }
 
-                if (isNextLinePublisher) { currentRecord.setPublisher(line); isNextLinePublisher = false; continue; }
-                if (line.startsWith("Publisher:")) { isNextLinePublisher = true; continue; }
+                if (isNextLinePublisher) {
+                    currentRecord.setPublisher(line);
+                    isNextLinePublisher = false;
+                    continue;
+                }
+                if (line.startsWith("Publisher:")) {
+                    isNextLinePublisher = true;
+                    continue;
+                }
 
-                if (isNextLineGenre) { currentRecord.setGenre(line); isNextLineGenre = false; continue; }
-                if (line.startsWith("Genre:")) { isNextLineGenre = true; continue; }
+                if (isNextLineGenre) {
+                    currentRecord.setGenre(line);
+                    isNextLineGenre = false;
+                    continue;
+                }
+                if (line.startsWith("Genre:")) {
+                    isNextLineGenre = true;
+                    continue;
+                }
 
-                if (isNextLinePhysDesc) { currentRecord.setPhysicalDescription(line); isNextLinePhysDesc = false; continue; }
-                if (line.startsWith("Physical Description:")) { isNextLinePhysDesc = true; continue; }
+                if (isNextLinePhysDesc) {
+                    currentRecord.setPhysicalDescription(line);
+                    isNextLinePhysDesc = false;
+                    continue;
+                }
+                if (line.startsWith("Physical Description:")) {
+                    isNextLinePhysDesc = true;
+                    continue;
+                }
 
-                if (isNextLineIsbn) { currentRecord.setIsbn(line); isNextLineIsbn = false; continue; }
-                if (line.startsWith("ISBN:")) { isNextLineIsbn = true; continue; }
+                if (isNextLineIsbn) {
+                    currentRecord.setIsbn(line);
+                    isNextLineIsbn = false;
+                    continue;
+                }
+                if (line.startsWith("ISBN:")) {
+                    isNextLineIsbn = true;
+                    continue;
+                }
             }
             if (currentRecord != null && currentRecord.getOclcNumber() != null) saveRecordToMaps(currentRecord);
             displayDirectory(textArea);
-        } catch (IOException e) { textArea.setText("Error reading file: " + e.getMessage() + "\n"); }
+        } catch (IOException e) {
+            textArea.setText("Error reading file: " + e.getMessage() + "\n");
+        }
     }
-
-
-    // --- DATA HANDLING AND CALCULATION METHODS ---
 
     // stores object in main map and increments genre counters for reports
     private static void saveRecordToMaps(LibraryItem item) {
@@ -542,9 +793,12 @@ public class MainGUI {
         int totalItems = completeCatalogue.size();
 
         // sum up totals from the genre maps
-        int totalBooks = 0; for (int count : bookGenreCounts.values()) totalBooks += count;
-        int totalDVDs = 0; for (int count : dvdGenreCounts.values()) totalDVDs += count;
-        int totalCDs = 0; for (int count : cdGenreCounts.values()) totalCDs += count;
+        int totalBooks = 0;
+        for (int count : bookGenreCounts.values()) totalBooks += count;
+        int totalDVDs = 0;
+        for (int count : dvdGenreCounts.values()) totalDVDs += count;
+        int totalCDs = 0;
+        for (int count : cdGenreCounts.values()) totalCDs += count;
 
         StringBuilder report = new StringBuilder();
         report.append("=========================================\n");
@@ -557,14 +811,35 @@ public class MainGUI {
 
         report.append("--- GENRE STATISTICS ---\n\n");
         report.append("Unique Book Genres (").append(bookGenreCounts.size()).append(" total):\n");
-        for (Map.Entry<String, Integer> entry : bookGenreCounts.entrySet()) report.append("  * ").append(entry.getKey()).append(": ").append(entry.getValue()).append(" item(s)\n");
+        for (Map.Entry<String, Integer> entry : bookGenreCounts.entrySet())
+            report.append("  * ").append(entry.getKey()).append(": ").append(entry.getValue()).append(" item(s)\n");
 
         report.append("\nUnique DVD Genres (").append(dvdGenreCounts.size()).append(" total):\n");
-        for (Map.Entry<String, Integer> entry : dvdGenreCounts.entrySet()) report.append("  * ").append(entry.getKey()).append(": ").append(entry.getValue()).append(" item(s)\n");
+        for (Map.Entry<String, Integer> entry : dvdGenreCounts.entrySet())
+            report.append("  * ").append(entry.getKey()).append(": ").append(entry.getValue()).append(" item(s)\n");
 
         report.append("\nUnique CD Genres (").append(cdGenreCounts.size()).append(" total):\n");
-        for (Map.Entry<String, Integer> entry : cdGenreCounts.entrySet()) report.append("  * ").append(entry.getKey()).append(": ").append(entry.getValue()).append(" item(s)\n");
+        for (Map.Entry<String, Integer> entry : cdGenreCounts.entrySet())
+            report.append("  * ").append(entry.getKey()).append(": ").append(entry.getValue()).append(" item(s)\n");
 
         return report.toString();
+    }
+
+    // Generates a JSON array containing all items that match the requested category
+    private static String generateJSONForCategory(String category) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("[\n");
+
+        List<LibraryItem> items = completeCatalogue.values().stream()
+                .filter(item -> item.getClass().getSimpleName().equalsIgnoreCase(category))
+                .collect(Collectors.toList());
+
+        for (int i = 0; i < items.size(); i++) {
+            sb.append("  ").append(items.get(i).toJSON().replace("\n", "\n  "));
+            if (i < items.size() - 1) sb.append(",\n");
+            else sb.append("\n");
+        }
+        sb.append("]");
+        return sb.toString();
     }
 }
