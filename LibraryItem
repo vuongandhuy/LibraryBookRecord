@@ -6,7 +6,7 @@ public class LibraryItem {
     private String publisher;
     private String physicalDescription;
     private String isbn;
-//Getter
+    //Getter
     public String getOclcNumber() { return oclcNumber; }
     public void setOclcNumber(String oclcNumber) { this.oclcNumber = oclcNumber; }
 
@@ -28,6 +28,7 @@ public class LibraryItem {
     public String getIsbn() { return isbn; }
     public void setIsbn(String isbn) { this.isbn = isbn; }
 
+
     @Override
     public String toString() {
         return "OCLC: " + oclcNumber + "\n" +
@@ -37,5 +38,13 @@ public class LibraryItem {
                 "Publisher: " + publisher + "\n" +
                 "Physical Description: " + physicalDescription + "\n" +
                 "ISBN: " + isbn + "\n";
+    }
+
+    public String toJSON() {
+        return "{}";
+    }
+
+    public String getItemType() {
+        return "{}";
     }
 }
