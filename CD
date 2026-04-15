@@ -4,9 +4,7 @@ public class CD extends LibraryItem {
     private String credits;
     private String description;
     private String language;
-    private String publisher;
-    private String physicalDescription;
-    private String isbn;
+    private String releaseYear;
 //Getter and Setter
     public String getPerformers() {
         return performers;
@@ -40,29 +38,9 @@ public class CD extends LibraryItem {
         this.language = language;
     }
 
-    public String getPublisher() {
-        return publisher;
-    }
+    public void setReleaseYear(String releaseYear) { this.releaseYear = releaseYear; }
 
-    public void setPublisher(String publisher) {
-        this.publisher = publisher;
-    }
-
-    public String getPhysicalDescription() {
-        return physicalDescription;
-    }
-
-    public void setPhysicalDescription(String physicalDescription) {
-        this.physicalDescription = physicalDescription;
-    }
-
-    public String getIsbn() {
-        return isbn;
-    }
-
-    public void setIsbn(String isbn) {
-        this.isbn = isbn;
-    }
+    public String getReleaseYear() { return releaseYear; }
 
     @Override
     public String toString() {
@@ -72,10 +50,27 @@ public class CD extends LibraryItem {
                 "Performers: " + performers + "\n" +
                 "Credits: " + credits + "\n" +
                 "Language: " + language + "\n" +
-                "Publisher: " + publisher + "\n" +
-                "Physical Description: " + physicalDescription + "\n" +
-                "ISBN: " + isbn + "\n" +
+                "Publisher: " + getPublisher() + "\n" +
+                "Physical Description: " + getPhysicalDescription() + "\n" +
+                "ISBN: " + getIsbn() + "\n" +
                 "Description: " + description + "\n" +
                 "------------------------------\n";
+    }
+    public String toJSON() {
+        String json = "{\n";
+        json += "  \"oclcNumber\": \"" + this.getOclcNumber() + "\",\n";
+        json += "  \"mediaType\": \"CD\",\n";
+        json += "  \"title\": \"" + this.getTitle() + "\",\n";
+        json += "  \"releaseYear\": " + this.getYear() + ",\n"; // Changed to getYear()
+        json += "  \"language\": \"" + this.language + "\",\n";
+        json += "  \"publisher\": \"" + this.getPublisher() + "\",\n"; // Changed to getter
+        json += "  \"genre\": \"" + this.getGenre() + "\",\n";
+        json += "  \"physicalDescription\": \"" + this.getPhysicalDescription() + "\",\n"; // Changed to getter
+        json += "  \"isbn\": \"" + this.getIsbn() + "\",\n"; // Changed to getter
+        json += "  \"performers\": \"" + this.performers + "\",\n";
+        json += "  \"credits\": \"" + this.credits + "\",\n";
+        json += "  \"description\": \"" + this.description + "\"\n";
+        json += "}";
+        return json;
     }
 }
