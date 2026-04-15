@@ -4,9 +4,7 @@ public class DVD extends LibraryItem {
     private String credits;
     private String plot;
     private String language;
-    private String publisher;
-    private String physicalDescription;
-    private String isbn;
+    private String releaseYear;
     //Getter
     public String getCast() {
         return cast;
@@ -21,15 +19,10 @@ public class DVD extends LibraryItem {
     public String getLanguage() {
         return language;
     }
-    public String getPublisher() {
-        return publisher;
+    public String getReleaseYear() {
+        return releaseYear;
     }
-    public String getPhysicalDescription() {
-        return physicalDescription;
-    }
-    public String getIsbn() {
-        return isbn;
-    }
+
     //Setter
     public void setCast(String cast) {
         this.cast = cast;
@@ -43,14 +36,8 @@ public class DVD extends LibraryItem {
     public void setLanguage(String language) {
         this.language = language;
     }
-    public void setPublisher(String publisher) {
-        this.publisher = publisher;
-    }
-    public void setPhysicalDescription(String physicalDescription) {
-        this.physicalDescription = physicalDescription;
-    }
-    public void setIsbn(String isbn) {
-        this.isbn = isbn;
+    public void setReleaseYear(String releaseYear) {
+        this.releaseYear = releaseYear;
     }
 
     @Override
@@ -61,10 +48,27 @@ public class DVD extends LibraryItem {
                 "Cast: " + cast + "\n" +
                 "Credits: " + credits + "\n" +
                 "Language: " + language + "\n" +
-                "Publisher: " + publisher + "\n" +
-                "Physical Description: " + physicalDescription + "\n" +
-                "ISBN: " + isbn + "\n" +
+                "Publisher: " + getPublisher() + "\n" +
+                "Physical Description: " + getPhysicalDescription() + "\n" +
+                "ISBN: " + getIsbn() + "\n" +
                 "Plot: " + plot + "\n" +
                 "------------------------------\n";
+    }
+    public String toJSON() {
+        String json = "{\n";
+        json += "  \"oclcNumber\": \"" + this.getOclcNumber() + "\",\n";
+        json += "  \"mediaType\": \"DVD\",\n";
+        json += "  \"title\": \"" + this.getTitle() + "\",\n";
+        json += "  \"releaseYear\": " + this.getYear() + ",\n"; // Use getYear()
+        json += "  \"language\": \"" + this.language + "\",\n";
+        json += "  \"publisher\": \"" + this.getPublisher() + "\",\n";
+        json += "  \"genre\": \"" + this.getGenre() + "\",\n";
+        json += "  \"physicalDescription\": \"" + this.getPhysicalDescription() + "\",\n";
+        json += "  \"isbn\": \"" + this.getIsbn() + "\",\n";
+        json += "  \"cast\": \"" + this.cast + "\",\n";
+        json += "  \"credits\": \"" + this.credits + "\",\n";
+        json += "  \"plot\": \"" + this.plot + "\"\n";
+        json += "}";
+        return json;
     }
 }
