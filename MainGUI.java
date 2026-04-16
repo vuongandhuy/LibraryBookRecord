@@ -858,10 +858,20 @@ public class MainGUI {
         for (String type : types) {
             sb.append("  <").append(type.toUpperCase()).append("_COLLECTION>\n");
 
-            // Group items by genre automatically using a Java Stream
-            Map<String, List<LibraryItem>> grouped = completeCatalogue.values().stream()
-                    .filter(item -> item.getClass().getSimpleName().equals(type))
-                    .collect(Collectors.groupingBy(item -> item.getGenre() != null ? item.getGenre() : "Unknown"));
+            //Manually group items into a HashMap based on their genre
+            Map<String, List<LibraryItem>> grouped = new HashMap<>();
+            for (LibraryItem item : completeCatalogue.values()) {
+                if (item.getClass().getSimpleName().equals(type)) {
+                    String genre = item.getGenre() != null ? item.getGenre() : "Unknown";
+
+                    // If this genre isn't in the map yet, create a new empty list for it
+                    if (!grouped.containsKey(genre)) {
+                        grouped.put(genre, new ArrayList<>());
+                    }
+                    // Add the item to its specific genre list
+                    grouped.get(genre).add(item);
+                }
+            }
 
             // Loop through each genre group and print the records
             for (String genre : grouped.keySet()) {
